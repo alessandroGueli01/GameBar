@@ -1,0 +1,12 @@
+{
+  "name": "foosball-simulator",
+  "version": "1.0.0",
+  "description": "MQTT sensor simulator for foosball game",
+  "main": "foosball-sim.js",
+  "scripts": {
+    "start": "node foosball-sim.js"
+  },
+  "dependencies": {
+    "mqtt": "^4.3.7"
+  }
+}

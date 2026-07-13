@@ -1,0 +1,121 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:latest
+    container_name: cgp-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=postgres_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/postgres:/docker-entrypoint-initdb.d
+    networks:
+      - cgp-net
+
+  # MQTT Broker
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: cgp-broker
+    ports:
+      - "1883:1883"
+      - "9001:9001" # Porta per WebSockets, utile per il frontend in futuro
+    volumes:
+      - ./infrastructure/mosquitto/config:/mosquitto/config
+    networks:
+      - cgp-net
+
+  # Nginx API Gateway
+  nginx:
+    image: nginx:latest
+    container_name: cgp-nginx
+    ports:
+      - "8080:80" # Mappa la porta 80 del container alla porta 8080 dell'host
+    volumes:
+      - ./infrastructure/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - postgres
+      - mosquitto
+    networks:
+      - cgp-net
+
+  # User Microservice
+  user-service:
+    build: ./backend/user-service
+    container_name: cgp-user-service
+    ports:
+      - "3001:3001"
+    environment:
+      - DATABASE_URL=${POSTGRES_USER_URI}
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      - postgres
+    networks:
+      - cgp-net
+
+  # Game Microservice
+  game-service:
+    build: ./backend/game-service
+    container_name: cgp-game-service
+    ports:
+      - "3002:3002"
+    environment:
+      - DATABASE_URL=${POSTGRES_GAME_URI}
+    depends_on:
+      - postgres
+    networks:
+      - cgp-net
+
+  # Match Microservice
+  match-service:
+    build: ./backend/match-service
+    container_name: cgp-match-service
+    ports:
+      - "3003:3003"
+    environment:
+      - DATABASE_URL=${POSTGRES_MATCH_URI}
+      - MQTT_BROKER=${MQTT_BROKER}
+      - API_GATEWAY_INTERNAL=${API_GATEWAY_INTERNAL} # Per chiamare Statistics Service
+    depends_on:
+      - postgres
+      - mosquitto
+      - statistics-service # Dipendenza per la chiamata HTTP
+    networks:
+      - cgp-net
+
+  # Tournament Microservice
+  tournament-service:
+    build: ./backend/tournament-service
+    container_name: cgp-tournament-service
+    ports:
+      - "3004:3004"
+    environment:
+      - DATABASE_URL=${POSTGRES_TOURNAMENT_URI}
+    depends_on:
+      - postgres
+    networks:
+      - cgp-net
+
+  # Statistics Microservice
+  statistics-service:
+    build: ./backend/statistics-service
+    container_name: cgp-statistics-service
+    ports:
+      - "3005:3005"
+    environment:
+      - DATABASE_URL=${POSTGRES_STATISTICS_URI}
+    depends_on:
+      - postgres
+    networks:
+      - cgp-net
+
+# Docker Networks
+networks:
+  cgp-net:
+    driver: bridge
+
+# Docker Volumes
+volumes:
+  postgres_data:

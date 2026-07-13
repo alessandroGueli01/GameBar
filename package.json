@@ -1,0 +1,13 @@
+{
+  "name": "gamebar",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Project GameBar per esame universitario",
+  "scripts": {
+    "start": "./scripts/start-demo.sh",
+    "check": "./scripts/check-project.sh",
+    "test": "npm run check",
+    "install:all": "./install_all_deps.sh",
+    "seed": "node seed.js"
+  }
+}

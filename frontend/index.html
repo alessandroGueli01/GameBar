@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connected Games Platform | Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm d-none" id="main-nav">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#" onclick="app.showSection('dashboard')">CGP Platform</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="app.showSection('games-section')">Giochi</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="app.showSection('matches-section')">Partite</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="app.showSection('tournaments-section')">Tornei</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="app.showSection('stats-section')">Classifiche</a></li>
+                    <li class="nav-item d-none" id="admin-nav-item"><a class="nav-link" href="#" onclick="app.showSection('admin-section')">Admin</a></li>
+                </ul>
+                <div class="d-flex align-items-center text-white me-3">
+                    <span id="user-display" class="me-3"></span>
+                    <button class="btn btn-outline-light btn-sm" onclick="auth.logout()">Logout</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container my-5">
+        <!-- Sezione Login/Registrazione -->
+        <section id="auth-section" class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="card border-0 shadow-lg">
+                    <div class="card-body p-5">
+                        <div class="row g-4 align-items-center">
+                            <div class="col-lg-7">
+                                <h1 class="display-6 fw-bold mb-3">Dai un'occhiata ai risultati dei giochi</h1>
+                                <p class="lead text-muted">Scopri partite live, tornei e classifiche senza dover accedere subito. Se vuoi partecipare, puoi entrare in qualsiasi momento.</p>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <button class="btn btn-primary" onclick="app.showSection('matches-section')">Vedi partite live</button>
+                                    <button class="btn btn-outline-primary" onclick="app.showSection('tournaments-section')">Vedi tornei</button>
+                                </div>
+                                <div id="landing-live-results" class="row g-3 mt-4"></div>
+                            </div>
+                            <div class="col-lg-5">
+                                <div class="card border-0 bg-light">
+                                    <div class="card-body p-4">
+                                        <h4 class="mb-3">Entra per partecipare</h4>
+                                        <div id="auth-feedback" class="mb-3"></div>
+
+                                        <form id="login-form" class="mb-3">
+                                            <div class="mb-3">
+                                                <label class="form-label">Email</label>
+                                                <input type="email" id="login-email" class="form-control" required placeholder="admin@example.com">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Password</label>
+                                                <input type="password" id="login-password" class="form-control" required placeholder="••••••••">
+                                            </div>
+                                            <button type="submit" class="btn btn-primary w-100 py-2">Accedi</button>
+                                        </form>
+
+                                        <div class="border-top pt-3">
+                                            <h6 class="mb-3">Nuovo utente?</h6>
+                                            <form id="register-form">
+                                                <div class="mb-2">
+                                                    <input type="text" id="register-username" class="form-control" placeholder="Nome utente" required>
+                                                </div>
+                                                <div class="mb-2">
+                                                    <input type="email" id="register-email" class="form-control" placeholder="Email" required>
+                                                </div>
+                                                <div class="mb-2">
+                                                    <input type="password" id="register-password" class="form-control" placeholder="Password" required>
+                                                </div>
+                                                <button type="submit" class="btn btn-outline-primary w-100">Registrati</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dashboard Principale (Nascosta di default) -->
+        <section id="dashboard" class="content-section d-none">
+            <div class="row g-4">
+                <div class="col-md-12 text-center mb-4">
+                    <h1>Benvenuto nella CGP Dashboard</h1>
+                    <p class="lead text-muted">Monitora i tuoi giochi e partecipa alle competizioni in tempo reale.</p>
+                </div>
+                <div class="col-md-4">
+                    <div class="card shadow-sm border-0 h-100 text-center p-4">
+                        <div class="card-body">
+                            <h5 class="card-title">Partite Recenti</h5>
+                            <div id="recent-matches-count" class="display-4 fw-bold">0</div>
+                            <button class="btn btn-primary mt-3" onclick="app.showSection('matches-section')">Vedi Partite</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card shadow-sm border-0 h-100 text-center p-4">
+                        <div class="card-body">
+                            <h5 class="card-title">Tornei Attivi</h5>
+                            <div id="active-tournaments-count" class="display-4 fw-bold text-success">0</div>
+                            <button class="btn btn-success mt-3" onclick="app.showSection('tournaments-section')">Vedi Tornei</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card shadow-sm border-0 h-100 text-center p-4">
+                        <div class="card-body">
+                            <h5 class="card-title">Il tuo Rank</h5>
+                            <div id="user-rank" class="display-4 fw-bold text-info">#--</div>
+                            <div id="user-rank-message" class="text-muted small mt-2">Partecipa a un gioco per entrare in classifica.</div>
+                            <button class="btn btn-info mt-3" onclick="app.showSection('stats-section')">Vedi Classifica</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Sezione Giochi -->
+        <section id="games-section" class="content-section d-none">
+            <h2 class="mb-4">Lista Giochi</h2>
+            <div id="games-grid" class="row row-cols-1 row-cols-md-3 g-4"></div>
+        </section>
+
+        <!-- Sezione Partite -->
+        <section id="matches-section" class="content-section d-none">
+            <h2 class="mb-4">Partite Live e Recenti</h2>
+            <div class="row g-4 mb-4">
+                <div class="col-12">
+                    <div class="card shadow-sm border-0 bg-dark text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="card-title mb-0">Risultati live per gioco</h5>
+                                <span class="badge bg-success">Live</span>
+                            </div>
+                            <div id="live-games-grid" class="row g-3"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="table-responsive bg-white p-3 shadow-sm rounded">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr><th>Data</th><th>Gioco</th><th>Risultato</th><th>Stato</th></tr>
+                            </thead>
+                            <tbody id="matches-list"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="card-title mb-0">Eventi Live</h5>
+                                <span class="badge bg-success">Aggiornati</span>
+                            </div>
+                            <ul id="live-events-list" class="list-group list-group-flush"></ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sezione Tornei -->
+        <section id="tournaments-section" class="content-section d-none">
+            <h2 class="mb-4">Tornei e Competizioni</h2>
+            <div id="tournaments-grid" class="row row-cols-1 row-cols-md-2 g-4"></div>
+        </section>
+
+        <!-- Sezione Statistiche -->
+        <section id="stats-section" class="content-section d-none">
+            <h2 class="mb-4">Classifica Globale</h2>
+            <div id="leaderboard-container" class="bg-white p-4 shadow-sm rounded"></div>
+        </section>
+
+        <!-- Sezione Admin -->
+        <section id="admin-section" class="content-section d-none">
+            <div class="row g-4">
+                <div class="col-12 text-center mb-4">
+                    <h1>Admin Control Panel</h1>
+                    <p class="lead text-muted">Monitora lo stato dei servizi e accedi rapidamente alle funzioni critiche della piattaforma.</p>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card shadow-sm border-0 h-100 p-4">
+                        <div class="card-body">
+                            <h5 class="card-title">Controllo servizi</h5>
+                            <p class="card-text text-muted">Verifica lo stato di tutti i microservizi del sistema.</p>
+                            <button class="btn btn-primary w-100" onclick="app.loadAdminData()">Aggiorna stato</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card shadow-sm border-0 h-100 p-4">
+                        <div class="card-body">
+                            <h5 class="card-title">Accesso rapido</h5>
+                            <p class="card-text text-muted">Vai direttamente alle sezioni gestite dalla piattaforma.</p>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-outline-secondary" onclick="app.showSection('games-section')">Gestione Giochi</button>
+                                <button class="btn btn-outline-secondary" onclick="app.showSection('matches-section')">Gestione Partite</button>
+                                <button class="btn btn-outline-secondary" onclick="app.showSection('tournaments-section')">Gestione Tornei</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card shadow-sm border-0 h-100 p-4">
+                        <div class="card-body">
+                            <h5 class="card-title">Controllo accessi</h5>
+                            <p class="card-text text-muted">Solo gli amministratori possono vedere questa pagina.</p>
+                            <p class="mb-0">Se il tuo accesso è valido, puoi monitorare lo stato e intervenire rapidamente.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="card shadow-sm border-0 bg-white p-4">
+                        <div class="card-body">
+                            <h5 class="card-title mb-3">Stato microservizi</h5>
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead>
+                                        <tr><th>Servizio</th><th>Stato</th><th>Endpoint</th></tr>
+                                    </thead>
+                                    <tbody id="admin-services-body">
+                                        <tr><td colspan="3" class="text-center text-muted">Premi Aggiorna per caricare lo stato.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Script caricati in ordine di dipendenza -->
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/app.js"></script>
+</body></html>
