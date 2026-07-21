@@ -7,6 +7,10 @@ const app = {
         leaderboard: []
     },
     recentMatches: [],
+    getCurrentUser() {
+        const currentUser = localStorage.getItem('cgp_user');
+        return currentUser ? JSON.parse(currentUser) : null;
+    },
     liveState: {
         games: [
             { id: 'calcetto', name: 'Calcetto', teamA: 'Team A', teamB: 'Team B', scoreA: 3, scoreB: 2, target: 10, unit: 'Goal', events: [{ time: 'Ora', text: 'Partita in corso: Team A in possesso' }] },
@@ -28,7 +32,7 @@ const app = {
     },
 
     showSection(sectionId) {
-        const currentUser = localStorage.getItem('cgp_user') ? JSON.parse(localStorage.getItem('cgp_user')) : null;
+        const currentUser = this.getCurrentUser();
         const isAdmin = currentUser?.role && currentUser.role !== 'PLAYER';
 
         if (sectionId === 'admin-section' && !isAdmin) {
@@ -82,10 +86,10 @@ const app = {
     async loadDashboardData() {
         const demoData = {
             games: [
-                { id: 1, name: 'Calcetto', gameType: 'FOOSBALL', status: 'ONLINE' },
-                { id: 2, name: 'Freccette', gameType: 'DARTS', status: 'ONLINE' },
-                { id: 3, name: 'Bocce', gameType: 'BOCCE', status: 'ONLINE' },
-                { id: 4, name: 'Bowling', gameType: 'BOWLING', status: 'ONLINE' }
+                { id: 'game-1', name: 'Calcetto', gameType: 'FOOSBALL', status: 'ONLINE' },
+                { id: 'game-2', name: 'Freccette', gameType: 'DARTS', status: 'ONLINE' },
+                { id: 'game-3', name: 'Bocce', gameType: 'BOCCE', status: 'ONLINE' },
+                { id: 'game-4', name: 'Bowling', gameType: 'BOWLING', status: 'ONLINE' }
             ],
             matches: [
                 { id: 1, createdAt: '2026-06-24', result: '3-2', status: 'FINISHED' },
@@ -102,19 +106,23 @@ const app = {
             ]
         };
 
-        try {
-            const [games, matches, tournaments, leaderboard] = await Promise.all([
-                api.request(CONFIG.GAME_BASE),
-                api.request(CONFIG.MATCH_BASE),
-                api.request(CONFIG.TOURNAMENT_BASE),
-                api.request(CONFIG.STATS_BASE)
-            ]);
+        const [gamesRes, matchesRes, tournamentsRes, leaderboardRes] = await Promise.allSettled([
+            api.request(CONFIG.GAME_BASE),
+            api.request(CONFIG.MATCH_BASE),
+            api.request(CONFIG.TOURNAMENT_BASE),
+            api.request(CONFIG.STATS_BASE)
+        ]);
 
-            this.renderDashboard(games, matches, tournaments, leaderboard);
-        } catch (error) {
-            console.warn('Backend non disponibile, uso dati demo:', error);
-            this.renderDashboard(demoData.games, demoData.matches, demoData.tournaments, demoData.leaderboard);
+        const games = gamesRes.status === 'fulfilled' ? gamesRes.value : demoData.games;
+        const matches = matchesRes.status === 'fulfilled' ? matchesRes.value : demoData.matches;
+        const tournaments = tournamentsRes.status === 'fulfilled' ? tournamentsRes.value : demoData.tournaments;
+        const leaderboard = leaderboardRes.status === 'fulfilled' ? leaderboardRes.value : demoData.leaderboard;
+
+        if (gamesRes.status === 'rejected' || matchesRes.status === 'rejected' || tournamentsRes.status === 'rejected' || leaderboardRes.status === 'rejected') {
+            console.warn('Uno o più servizi non disponibili: uso dati fallback solo per i servizi non raggiungibili.');
         }
+
+        this.renderDashboard(games, matches, tournaments, leaderboard);
     },
 
     renderDashboard(games, matches, tournaments, leaderboard) {
@@ -136,7 +144,7 @@ const app = {
         document.getElementById('recent-matches-count').textContent = combinedMatches.length;
         document.getElementById('active-tournaments-count').textContent = tournamentsList.length;
 
-        const currentUser = localStorage.getItem('cgp_user') ? JSON.parse(localStorage.getItem('cgp_user')) : null;
+        const currentUser = this.getCurrentUser();
         const isAdmin = currentUser?.role === 'PLATFORM_ADMIN';
         let currentRank = null;
 
@@ -178,6 +186,12 @@ const app = {
                                 <h5 class="card-title">${game.name || 'Gioco'}</h5>
                                 <p class="card-text text-muted">Tipo: ${game.gameType || 'N/D'}</p>
                                 <span class="badge ${game.status === 'ONLINE' ? 'bg-success' : 'bg-secondary'}">${game.status || 'N/D'}</span>
+                                ${currentUser && currentUser.role === 'PLAYER' && game.status === 'ONLINE'
+                                    ? `<div class="mt-3"><button class="btn btn-primary btn-sm" onclick="app.joinGame('${game.id}')">Partecipa al gioco</button></div>`
+                                    : ''}
+                                ${currentUser && currentUser.role !== 'PLAYER' && game.status === 'ONLINE'
+                                    ? '<div class="small text-muted mt-2">Solo i giocatori possono partecipare ai giochi.</div>'
+                                    : ''}
                             </div>
                         </div>
                     </div>
@@ -208,6 +222,13 @@ const app = {
                             <div class="card-body">
                                 <h5 class="card-title">${tournament.name || 'Torneo'}</h5>
                                 <p class="card-text text-muted">Stato: ${tournament.status || 'N/D'}</p>
+                                <p class="card-text small text-muted">Partecipanti: ${(tournament.participants || []).length}/${tournament.maxParticipants || 0}</p>
+                                ${currentUser && currentUser.role === 'PLAYER' && tournament.status === 'REGISTRATION_OPEN'
+                                    ? `<button class="btn btn-primary btn-sm" onclick="app.joinTournament('${tournament.id}')">Partecipa</button>`
+                                    : ''}
+                                ${currentUser && currentUser.role !== 'PLAYER' && tournament.status === 'REGISTRATION_OPEN'
+                                    ? '<div class="small text-muted mt-2">Solo i giocatori possono iscriversi.</div>'
+                                    : ''}
                             </div>
                         </div>
                     </div>
@@ -351,6 +372,64 @@ const app = {
                     <span class="badge bg-primary rounded-pill">Live</span>
                 </li>
             `).join('');
+        }
+    },
+
+    async joinTournament(tournamentId) {
+        const currentUser = this.getCurrentUser();
+
+        if (!currentUser) {
+            alert("Devi effettuare l'accesso per partecipare a un torneo.");
+            return;
+        }
+
+        if (currentUser.role !== 'PLAYER') {
+            alert('Solo i giocatori possono iscriversi ai tornei.');
+            return;
+        }
+
+        try {
+            await api.request(`${CONFIG.TOURNAMENT_BASE}/${tournamentId}/join`, 'POST', {
+                userId: currentUser.id,
+                username: currentUser.username
+            });
+
+            alert('Iscrizione al torneo completata con successo.');
+            await this.loadDashboardData();
+        } catch (error) {
+            alert(`Iscrizione non riuscita: ${error.message}`);
+        }
+    },
+
+    async joinGame(gameId) {
+        const currentUser = this.getCurrentUser();
+
+        if (!currentUser) {
+            alert("Devi effettuare l'accesso per partecipare a un gioco.");
+            return;
+        }
+
+        if (currentUser.role !== 'PLAYER') {
+            alert('Solo i giocatori possono partecipare ai giochi.');
+            return;
+        }
+
+        try {
+            await api.request(CONFIG.MATCH_BASE, 'POST', {
+                gameId,
+                players: [
+                    {
+                        userId: currentUser.id,
+                        username: currentUser.username,
+                        team: 'A'
+                    }
+                ]
+            });
+
+            alert('Sei stato registrato al gioco e la partita è stata avviata.');
+            await this.loadDashboardData();
+        } catch (error) {
+            alert(`Iscrizione al gioco non riuscita: ${error.message}`);
         }
     }
 };

@@ -37,6 +37,24 @@ start_service 3003 "backend/match-service" "$ROOT_DIR/logs/match-service.log" "n
 start_service 3004 "backend/tournament-service" "$ROOT_DIR/logs/tournament-service.log" "npm start"
 start_service 3005 "backend/statistics-service" "$ROOT_DIR/logs/statistics-service.log" "npm start"
 
+echo "Attendo che i servizi siano pronti prima del seed..."
+for attempt in 1 2 3 4 5; do
+  if curl -s http://localhost:3001/health >/dev/null 2>&1 && \
+     curl -s http://localhost:3002/health >/dev/null 2>&1 && \
+     curl -s http://localhost:3003/health >/dev/null 2>&1 && \
+     curl -s http://localhost:3004/health >/dev/null 2>&1 && \
+     curl -s http://localhost:3005/health >/dev/null 2>&1; then
+    break
+  fi
+  sleep 2
+done
+
+if node "$ROOT_DIR/seed.js" >/dev/null 2>&1; then
+  echo "[OK] Dati demo caricati"
+else
+  echo "[WARN] Seed demo non eseguito correttamente"
+fi
+
 if lsof -ti :8000 >/dev/null 2>&1; then
   echo "[OK] frontend già disponibile su http://localhost:8000"
 else

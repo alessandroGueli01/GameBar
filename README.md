@@ -18,6 +18,17 @@ Il sistema mostra come integrare:
 - Broker MQTT: configurazione in [infrastructure/mosquitto](infrastructure/mosquitto)
 - Database: PostgreSQL con inizializzazione in [infrastructure/postgres](infrastructure/postgres)
 
+## Servizi principali
+
+| Servizio | Porta | Responsabilità |
+| --- | --- | --- |
+| User service | 3001 | autenticazione e gestione utenti |
+| Game service | 3002 | giochi e location |
+| Match service | 3003 | partite e flusso eventi |
+| Tournament service | 3004 | tornei |
+| Statistics service | 3005 | statistiche e classifiche |
+| Frontend | 8000 | interfaccia web |
+
 ## Tecnologie usate
 
 - Node.js + Express
@@ -44,6 +55,7 @@ Il sistema mostra come integrare:
 2. Configura l'ambiente:
    - copia `.env.example` in `.env`
    - aggiorna i valori se necessario
+   - usa `.env` solo in locale: il file è già escluso dal repository
 
 3. Avvia la demo con il metodo principale:
    ```bash
@@ -71,15 +83,23 @@ Il sistema mostra come integrare:
 - aggiornamenti in tempo reale tramite MQTT;
 - elaborazione di statistiche e classifiche.
 
-## utenti da usare
+## Dati di test
 
-   utente
-   user=luigiverdi@example.com
-   password=luigi123!
-   
-   admin
-   user= local@admin.com
-   password=admin123!
+- Utente standard: `luigiverdi@example.com` / `luigi123!`
+- Admin locale: `local@admin.com` / `admin123!`
+- Admin gioco: `game@admin.com` / `admin123!`
+- Admin piattaforma: `platform@admin.com` / `admin123!`
+
+## Ruoli utente
+
+- Giocatore: si registra, partecipa alle partite, ai giochi disponibili e ai tornei aperti, visualizza dashboard, classifica e risultati live.
+- Amministratore locale: controlla i giochi e lo stato del proprio locale.
+- Amministratore gioco: monitora un gioco specifico e gli eventi generati dal sistema.
+- Amministratore piattaforma: verifica lo stato generale dei servizi e supervisiona la demo.
+
+## Simulazione sensori
+
+Il simulatore MQTT in [sensor-simulator](sensor-simulator) può essere usato per generare eventi fittizi di partita. È utile per la demo perché mostra il flusso realtime senza dover inserire manualmente gli eventi.
 
 
 ## Punti da esporre all'esame

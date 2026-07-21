@@ -34,10 +34,17 @@ function determineRoleFromEmail(email) {
 
 exports.register = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
-    const role = determineRoleFromEmail(email);
+    const { username, email, password, role } = req.body;
+    const requestedRole = typeof role === 'string' ? role.toUpperCase() : '';
+    const finalRole = requestedRole
+      ? (USER_ROLES.includes(requestedRole) ? requestedRole : null)
+      : determineRoleFromEmail(email);
 
-    const user = await User.create({ username, email, password, role });
+    if (requestedRole && !finalRole) {
+      return res.status(400).json({ error: 'Ruolo utente non valido' });
+    }
+
+    const user = await User.create({ username, email, password, role: finalRole });
     const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '24h' });
 
     res.status(201).json({ user: sanitizeUser(user), token });
