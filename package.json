@@ -6,8 +6,15 @@
   "scripts": {
     "start": "./scripts/start-demo.sh",
     "check": "./scripts/check-project.sh",
-    "test": "npm run check",
+    "test": "jest --runInBand",
+    "test:check": "npm run check",
+    "test:all": "npm run test:check && npm test",
     "install:all": "./install_all_deps.sh",
     "seed": "node seed.js"
+  },
+  "devDependencies": {
+    "express": "^5.2.1",
+    "jest": "^30.4.2",
+    "supertest": "^7.2.2"
   }
 }
