@@ -10,7 +10,7 @@ exports.createTournament = async (req, res) => {
   }
 };
 
-// Ottieni tutti i tornei (con filtri opzionali)
+// Ottieni tutti i tornei (con filtri opzionali e conteggi partecipanti)
 exports.getTournaments = async (req, res) => {
   try {
     const { status, gameType, locationId } = req.query;
@@ -23,18 +23,33 @@ exports.getTournaments = async (req, res) => {
       where: query, 
       order: [['startDate', 'DESC']] 
     });
-    res.json(tournaments);
+
+    // Aggiungi il conteggio partecipanti e posti disponibili
+    const tournamentsWithCounts = tournaments.map(tournament => {
+      const data = tournament.toJSON();
+      data.participantCount = tournament.participants.length;
+      data.availableSpots = tournament.maxParticipants - tournament.participants.length;
+      return data;
+    });
+
+    res.json(tournamentsWithCounts);
   } catch (err) {
     res.status(500).json({ error: "Errore nel recupero dei tornei", details: err.message });
   }
 };
 
-// Ottieni un torneo per ID
+// Ottieni un torneo per ID (con numero partecipanti)
 exports.getTournamentById = async (req, res) => {
   try {
     const tournament = await Tournament.findByPk(req.params.id);
     if (!tournament) return res.status(404).json({ error: "Torneo non trovato" });
-    res.json(tournament);
+    
+    // Aggiungi il numero di partecipanti e posti disponibili
+    const tournamentData = tournament.toJSON();
+    tournamentData.participantCount = tournament.participants.length;
+    tournamentData.availableSpots = tournament.maxParticipants - tournament.participants.length;
+    
+    res.json(tournamentData);
   } catch (err) {
     res.status(500).json({ error: "Errore nel recupero del torneo", details: err.message });
   }
@@ -87,6 +102,39 @@ exports.joinTournament = async (req, res) => {
     res.json(tournament);
   } catch (err) {
     res.status(400).json({ error: "Errore nell'iscrizione al torneo", details: err.message });
+  }
+};
+
+// Rimuovi un partecipante da un torneo (cancellazione iscrizione)
+exports.leaveTournament = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const tournament = await Tournament.findByPk(req.params.id);
+
+    if (!tournament) return res.status(404).json({ error: "Torneo non trovato" });
+    
+    // Verifica se il torneo è ancora aperto alle iscrizioni
+    if (tournament.status !== 'REGISTRATION_OPEN') {
+      return res.status(400).json({ error: "Non puoi cancellarti da un torneo che non è in fase di iscrizione." });
+    }
+
+    // Verifica se l'utente è iscritto
+    if (!tournament.participants.some(p => p.userId.toString() === userId)) {
+      return res.status(400).json({ error: "L'utente non è iscritto a questo torneo." });
+    }
+
+    // Rimuovi l'utente
+    const updatedParticipants = tournament.participants.filter(p => p.userId.toString() !== userId);
+    tournament.participants = updatedParticipants;
+    await tournament.save();
+
+    res.json({
+      message: "Iscrizione annullata con successo",
+      participantCount: updatedParticipants.length,
+      availableSpots: tournament.maxParticipants - updatedParticipants.length
+    });
+  } catch (err) {
+    res.status(400).json({ error: "Errore nella cancellazione dell'iscrizione", details: err.message });
   }
 };
 

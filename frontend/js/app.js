@@ -278,23 +278,40 @@ const app = {
         const tournamentsGrid = document.getElementById('tournaments-grid');
         if (tournamentsGrid) {
             tournamentsGrid.innerHTML = tournamentsList.length
-                ? tournamentsList.map((tournament) => `
-                    <div class="col">
-                        <div class="card h-100 shadow-sm border-0">
-                            <div class="card-body">
-                                <h5 class="card-title">${tournament.name || 'Torneo'}</h5>
-                                <p class="card-text text-muted">Stato: ${tournament.status || 'N/D'}</p>
-                                <p class="card-text small text-muted">Partecipanti: ${(tournament.participants || []).length}/${tournament.maxParticipants || 0}</p>
-                                ${currentUser && currentUser.role === 'PLAYER' && tournament.status === 'REGISTRATION_OPEN'
-                                    ? `<button class="btn btn-primary btn-sm" onclick="app.joinTournament('${tournament.id}')">Partecipa</button>`
-                                    : ''}
-                                ${currentUser && currentUser.role !== 'PLAYER' && tournament.status === 'REGISTRATION_OPEN'
-                                    ? '<div class="small text-muted mt-2">Solo i giocatori possono iscriversi.</div>'
-                                    : ''}
+                ? tournamentsList.map((tournament) => {
+                    const isUserEnrolled = currentUser && tournament.participants && 
+                                          tournament.participants.some(p => p.userId === currentUser.id);
+                    const participantCount = tournament.participantCount || (tournament.participants || []).length;
+                    const maxParticipants = tournament.maxParticipants || 0;
+                    const availableSpots = tournament.availableSpots || (maxParticipants - participantCount);
+                    
+                    return `
+                        <div class="col">
+                            <div class="card h-100 shadow-sm border-0">
+                                <div class="card-body">
+                                    <h5 class="card-title">${tournament.name || 'Torneo'}</h5>
+                                    <p class="card-text text-muted">Stato: <span class="badge ${tournament.status === 'REGISTRATION_OPEN' ? 'bg-success' : tournament.status === 'ONGOING' ? 'bg-warning' : 'bg-secondary'}">${tournament.status || 'N/D'}</span></p>
+                                    <div class="alert alert-info py-2 mb-3">
+                                        <strong>Partecipanti:</strong> ${participantCount}/${maxParticipants}
+                                        <br><small class="text-muted">Posti disponibili: ${availableSpots}</small>
+                                    </div>
+                                    <div class="btn-group w-100" role="group">
+                                        ${currentUser && currentUser.role === 'PLAYER' && tournament.status === 'REGISTRATION_OPEN'
+                                            ? isUserEnrolled 
+                                                ? `<button class="btn btn-danger btn-sm" onclick="app.leaveTournament('${tournament.id}')">❌ Cancellati</button>`
+                                                : availableSpots > 0
+                                                    ? `<button class="btn btn-primary btn-sm" onclick="app.joinTournament('${tournament.id}')">✓ Partecipa</button>`
+                                                    : `<button class="btn btn-secondary btn-sm" disabled>Torneo Pieno</button>`
+                                            : currentUser && currentUser.role !== 'PLAYER' && tournament.status === 'REGISTRATION_OPEN'
+                                                ? '<small class="text-muted d-block mt-2">Solo i giocatori possono iscriversi.</small>'
+                                                : ''}
+                                    </div>
+                                    ${isUserEnrolled ? '<p class="text-success small mt-2">✓ Sei iscritto a questo torneo</p>' : ''}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `).join('')
+                    `;
+                }).join('')
                 : '<div class="col"><div class="alert alert-info">Nessun torneo disponibile.</div></div>';
         }
 
@@ -460,6 +477,30 @@ const app = {
             await this.loadDashboardData();
         } catch (error) {
             alert(`Iscrizione non riuscita: ${error.message}`);
+        }
+    },
+
+    async leaveTournament(tournamentId) {
+        const currentUser = this.getCurrentUser();
+
+        if (!currentUser) {
+            alert("Devi effettuare l'accesso per cancellarti da un torneo.");
+            return;
+        }
+
+        if (!confirm('Sei sicuro di voler cancellarti da questo torneo?')) {
+            return;
+        }
+
+        try {
+            await api.request(`${CONFIG.TOURNAMENT_BASE}/${tournamentId}/leave`, 'POST', {
+                userId: currentUser.id
+            });
+
+            alert('Cancellazione dal torneo completata con successo.');
+            await this.loadDashboardData();
+        } catch (error) {
+            alert(`Cancellazione non riuscita: ${error.message}`);
         }
     },
 
