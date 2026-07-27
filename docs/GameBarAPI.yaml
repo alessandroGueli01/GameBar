@@ -1,0 +1,1195 @@
+openapi: 3.0.3
+info:
+  title: GameBar REST API
+  version: 1.0.0
+  description: |
+    Documentazione OpenAPI delle REST API del progetto GameBar.
+    Gli endpoint sono esposti tramite API Gateway Nginx su porta 8080.
+servers:
+  - url: http://localhost:8080
+    description: API Gateway (Nginx)
+  - url: http://localhost:3001
+    description: User service (diretto)
+  - url: http://localhost:3002
+    description: Game service (diretto)
+  - url: http://localhost:3003
+    description: Match service (diretto)
+  - url: http://localhost:3004
+    description: Tournament service (diretto)
+  - url: http://localhost:3005
+    description: Statistics service (diretto)
+tags:
+  - name: Users
+  - name: Games
+  - name: Locations
+  - name: Matches
+  - name: Tournaments
+  - name: Statistics
+paths:
+  /api/users/register:
+    post:
+      tags: [Users]
+      summary: Registra un nuovo utente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Utente registrato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Dati non validi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/users/login:
+    post:
+      tags: [Users]
+      summary: Login utente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login effettuato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Credenziali non valide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Errore interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/users/me:
+    get:
+      tags: [Users]
+      summary: Profilo utente autenticato
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profilo utente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPublic'
+        '401':
+          description: Token mancante o non valido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Utente non trovato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/games/locations:
+    post:
+      tags: [Locations]
+      summary: Crea una location
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLocationRequest'
+      responses:
+        '201':
+          description: Location creata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Location'
+        '400':
+          description: Dati non validi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      tags: [Locations]
+      summary: Lista location
+      responses:
+        '200':
+          description: Elenco location
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Location'
+        '500':
+          description: Errore interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/games:
+    post:
+      tags: [Games]
+      summary: Crea un gioco
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGameRequest'
+      responses:
+        '201':
+          description: Gioco creato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Game'
+        '400':
+          description: Dati non validi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      tags: [Games]
+      summary: Lista giochi
+      parameters:
+        - in: query
+          name: locationId
+          schema:
+            type: string
+            format: uuid
+          description: Filtra per location
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/GameStatus'
+          description: Filtra per stato
+      responses:
+        '200':
+          description: Elenco giochi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Game'
+        '500':
+          description: Errore interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/games/{id}:
+    get:
+      tags: [Games]
+      summary: Dettaglio gioco
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Gioco trovato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Game'
+        '404':
+          description: Gioco non trovato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Errore interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/games/{id}/status:
+    patch:
+      tags: [Games]
+      summary: Aggiorna lo stato di un gioco
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateGameStatusRequest'
+      responses:
+        '200':
+          description: Stato aggiornato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Game'
+        '400':
+          description: Dati non validi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Gioco non trovato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/matches:
+    post:
+      tags: [Matches]
+      summary: Crea una nuova partita
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMatchRequest'
+      responses:
+        '201':
+          description: Partita creata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Match'
+        '400':
+          description: Dati non validi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      tags: [Matches]
+      summary: Lista partite
+      responses:
+        '200':
+          description: Elenco partite
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Match'
+        '500':
+          description: Errore interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/matches/{id}:
+    get:
+      tags: [Matches]
+      summary: Dettaglio partita
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Partita trovata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Match'
+        '404':
+          description: Partita non trovata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Errore interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/matches/event:
+    post:
+      tags: [Matches]
+      summary: Aggiunge un evento manuale a una partita
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddMatchEventRequest'
+      responses:
+        '200':
+          description: Evento aggiunto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Match'
+        '400':
+          description: Dati non validi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Partita non trovata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/matches/end:
+    post:
+      tags: [Matches]
+      summary: Termina una partita
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EndMatchRequest'
+      responses:
+        '200':
+          description: Partita terminata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Match'
+        '400':
+          description: Dati non validi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Partita non trovata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/tournaments:
+    post:
+      tags: [Tournaments]
+      summary: Crea un torneo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTournamentRequest'
+      responses:
+        '201':
+          description: Torneo creato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tournament'
+        '400':
+          description: Dati non validi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      tags: [Tournaments]
+      summary: Lista tornei
+      parameters:
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/TournamentStatus'
+        - in: query
+          name: gameType
+          schema:
+            $ref: '#/components/schemas/GameType'
+        - in: query
+          name: locationId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Elenco tornei
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tournament'
+        '500':
+          description: Errore interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/tournaments/{id}:
+    get:
+      tags: [Tournaments]
+      summary: Dettaglio torneo
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Torneo trovato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tournament'
+        '404':
+          description: Torneo non trovato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Errore interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags: [Tournaments]
+      summary: Aggiorna un torneo
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTournamentRequest'
+      responses:
+        '200':
+          description: Torneo aggiornato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tournament'
+        '400':
+          description: Dati non validi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Torneo non trovato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [Tournaments]
+      summary: Elimina un torneo
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Torneo eliminato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Torneo eliminato con successo
+        '404':
+          description: Torneo non trovato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Errore interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/tournaments/{id}/join:
+    post:
+      tags: [Tournaments]
+      summary: Iscrive un utente a un torneo
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JoinTournamentRequest'
+      responses:
+        '200':
+          description: Iscrizione effettuata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tournament'
+        '400':
+          description: Iscrizione non valida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Torneo non trovato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/tournaments/{id}/end:
+    post:
+      tags: [Tournaments]
+      summary: Finalizza un torneo e calcola la classifica
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Torneo finalizzato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tournament'
+        '400':
+          description: Torneo gia terminato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Torneo non trovato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Errore interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/stats/leaderboard:
+    get:
+      tags: [Statistics]
+      summary: Classifica globale
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            default: 10
+      responses:
+        '200':
+          description: Classifica utenti
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Statistic'
+        '500':
+          description: Errore interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/stats/user/{userId}:
+    get:
+      tags: [Statistics]
+      summary: Statistiche di un utente
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Statistiche utente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Statistic'
+        '404':
+          description: Statistiche non trovate
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Errore interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/stats/update:
+    post:
+      tags: [Statistics]
+      summary: Aggiorna statistiche da risultato partita
+      description: Endpoint usato anche internamente dal match-service.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateStatsRequest'
+      responses:
+        '200':
+          description: Statistiche aggiornate
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Statistiche aggiornate correttamente
+        '400':
+          description: Payload non valido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        details:
+          type: string
+      required: [error]
+
+    UserRole:
+      type: string
+      enum: [PLAYER, LOCATION_ADMIN, GAME_ADMIN, PLATFORM_ADMIN]
+
+    GameType:
+      type: string
+      enum: [FOOSBALL, DARTS, PINGPONG, AIRHOCKEY]
+
+    GameStatus:
+      type: string
+      enum: [ONLINE, OFFLINE, MAINTENANCE]
+
+    MatchStatus:
+      type: string
+      enum: [PENDING, ONGOING, FINISHED, CANCELLED]
+
+    TournamentStatus:
+      type: string
+      enum: [REGISTRATION_OPEN, ONGOING, FINISHED, CANCELLED]
+
+    UserPublic:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        avatar:
+          type: string
+        role:
+          $ref: '#/components/schemas/UserRole'
+        totalWins:
+          type: integer
+        matchesPlayed:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    RegisterRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+        role:
+          $ref: '#/components/schemas/UserRole'
+      required: [username, email, password]
+
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required: [email, password]
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/UserPublic'
+        token:
+          type: string
+      required: [user, token]
+
+    Location:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        description:
+          type: string
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateLocationRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        description:
+          type: string
+        isActive:
+          type: boolean
+      required: [name]
+
+    Game:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        gameType:
+          $ref: '#/components/schemas/GameType'
+        status:
+          $ref: '#/components/schemas/GameStatus'
+        locationId:
+          type: string
+          format: uuid
+        sensors:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        metadata:
+          type: object
+          additionalProperties: true
+        location:
+          $ref: '#/components/schemas/Location'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateGameRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        gameType:
+          $ref: '#/components/schemas/GameType'
+        status:
+          $ref: '#/components/schemas/GameStatus'
+        locationId:
+          type: string
+          format: uuid
+        sensors:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        metadata:
+          type: object
+          additionalProperties: true
+      required: [name, gameType]
+
+    UpdateGameStatusRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/GameStatus'
+      required: [status]
+
+    MatchPlayer:
+      type: object
+      properties:
+        userId:
+          type: string
+        username:
+          type: string
+        team:
+          type: string
+          enum: [A, B]
+      required: [userId, team]
+
+    MatchScore:
+      type: object
+      properties:
+        teamA:
+          type: integer
+        teamB:
+          type: integer
+      required: [teamA, teamB]
+
+    MatchEvent:
+      type: object
+      properties:
+        type:
+          type: string
+        payload:
+          type: object
+          additionalProperties: true
+        timestamp:
+          type: string
+          format: date-time
+
+    Match:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        gameId:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/MatchStatus'
+        players:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchPlayer'
+        score:
+          $ref: '#/components/schemas/MatchScore'
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchEvent'
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateMatchRequest:
+      type: object
+      properties:
+        gameId:
+          type: string
+          format: uuid
+        players:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchPlayer'
+      required: [gameId, players]
+
+    AddMatchEventRequest:
+      type: object
+      properties:
+        matchId:
+          type: string
+          format: uuid
+        eventType:
+          type: string
+        payload:
+          type: object
+          additionalProperties: true
+      required: [matchId, eventType]
+
+    EndMatchRequest:
+      type: object
+      properties:
+        matchId:
+          type: string
+          format: uuid
+      required: [matchId]
+
+    TournamentParticipant:
+      type: object
+      properties:
+        userId:
+          type: string
+        username:
+          type: string
+        score:
+          type: integer
+        wins:
+          type: integer
+        losses:
+          type: integer
+
+    TournamentLeaderboardEntry:
+      type: object
+      properties:
+        userId:
+          type: string
+        username:
+          type: string
+        finalScore:
+          type: integer
+        finalRank:
+          type: integer
+
+    Tournament:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        gameType:
+          $ref: '#/components/schemas/GameType'
+        locationId:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/TournamentStatus'
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        maxParticipants:
+          type: integer
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/TournamentParticipant'
+        matches:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        leaderboard:
+          type: array
+          items:
+            $ref: '#/components/schemas/TournamentLeaderboardEntry'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateTournamentRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        gameType:
+          $ref: '#/components/schemas/GameType'
+        locationId:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/TournamentStatus'
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        maxParticipants:
+          type: integer
+      required: [name, gameType, startDate]
+
+    UpdateTournamentRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        gameType:
+          $ref: '#/components/schemas/GameType'
+        locationId:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/TournamentStatus'
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        maxParticipants:
+          type: integer
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/TournamentParticipant'
+        matches:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        leaderboard:
+          type: array
+          items:
+            $ref: '#/components/schemas/TournamentLeaderboardEntry'
+
+    JoinTournamentRequest:
+      type: object
+      properties:
+        userId:
+          type: string
+        username:
+          type: string
+      required: [userId, username]
+
+    Statistic:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        username:
+          type: string
+        wins:
+          type: integer
+        losses:
+          type: integer
+        draws:
+          type: integer
+        matchesPlayed:
+          type: integer
+        points:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UpdateStatsRequest:
+      type: object
+      properties:
+        players:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchPlayer'
+        score:
+          $ref: '#/components/schemas/MatchScore'
+      required: [players, score]

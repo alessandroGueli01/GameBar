@@ -1,7 +1,11 @@
 const mqtt = require('mqtt');
 
-const MQTT_BROKER = process.env.MQTT_BROKER || 'mqtt://test.mosquitto.org';
-const mqttClient = mqtt.connect(MQTT_BROKER);
+// Usa solo il broker locale (offline-first)
+const MQTT_BROKER = process.env.MQTT_BROKER || 'mqtt://mosquitto:1883';
+const mqttClient = mqtt.connect(MQTT_BROKER, {
+  reconnectPeriod: 5000,
+  connectTimeout: 10000
+});
 
 mqttClient.on('connect', () => {
   console.log('Match Service: Connesso al broker MQTT');

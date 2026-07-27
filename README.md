@@ -36,6 +36,20 @@ Il sistema mostra come integrare:
 - MQTT con Mosquitto
 - Docker + Docker Compose
 - HTML/CSS/JavaScript per il frontend
+- Service Workers + IndexedDB per **supporto offline** 🚀
+
+## 🚀 Supporto Offline (Novità!)
+
+GameBar ora funziona completamente offline! 
+
+- ✅ **Backend offline**: Tutti i servizi locali tramite Docker, nessuna dipendenza esterna
+- ✅ **Frontend offline**: Service Worker + IndexedDB caching
+- ✅ **Edge Computing Partite**: Creazione e modifica partite offline con sincronizzazione automatica
+- ✅ **Sincronizzazione automatica**: Coda di operazioni quando torna online
+
+**Per iniziare**: 
+- Guida generale: [OFFLINE_GUIDE.md](OFFLINE_GUIDE.md)
+- Guida Edge partite: [EDGE_OFFLINE_GUIDE.md](EDGE_OFFLINE_GUIDE.md) ⭐ **Leggere questa!**
 
 ## Struttura principale
 
@@ -101,6 +115,32 @@ Il sistema mostra come integrare:
 
 Il simulatore MQTT in [sensor-simulator](sensor-simulator) può essere usato per generare eventi fittizi di partita. È utile per la demo perché mostra il flusso realtime senza dover inserire manualmente gli eventi.
 
+## Modifiche per Supporto Offline
+
+### File aggiunti:
+- `frontend/service-worker.js` - Caching offline e strategie di rete
+- `frontend/js/offline-storage.js` - Manager IndexedDB per persistenza locale
+- `frontend/js/offline-sync.js` - Sincronizzatore automatico per richieste in coda
+- `frontend/js/edge-match-manager.js` - ⭐ **Edge Computing per partite offline**
+- `frontend/js/edge-ui.js` - UI per visualizzare stato offline e coda sincronizzazione
+- `OFFLINE_GUIDE.md` - Guida completa al supporto offline
+- `EDGE_OFFLINE_GUIDE.md` - ⭐ **Guida Edge Computing per partite offline**
+
+### File modificati:
+- `backend/match-service/mqttClient.js` - Rimosso fallback esterno, solo MQTT locale
+- `frontend/js/api.js` - Integrazione caching offline per richieste API
+- `frontend/index.html` - Aggiunto Service Worker, script offline e edge
+- `frontend/js/app.js` - Inizializzazione offline e notifiche stato connessione
+
+### Funzionalità offline:
+- ✅ Cache automatico di asset e dati API
+- ✅ IndexedDB per salvataggio persistente (utenti, giochi, match, tornei, statistiche)
+- ✅ **Edge Match Manager: creazione/modifica partite offline con sync automatico**
+- ✅ Coda di sincronizzazione per operazioni POST/PUT/DELETE
+- ✅ Sincronizzazione automatica quando ritorna online
+- ✅ UI per monitorare stato offline e operazioni in coda
+- ✅ Notifiche visive di stato connessione
+- ✅ Broker MQTT locale senza dipendenze esterne
 
 ## Punti da esporre all'esame
 

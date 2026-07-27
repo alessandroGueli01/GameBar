@@ -29,6 +29,68 @@ const app = {
         this.showSection('dashboard');
         this.initLiveMatchFeed();
         this.loadDashboardData();
+        
+        // Inizializza supporto offline
+        this.initOfflineSupport();
+    },
+
+    async initOfflineSupport() {
+        try {
+            // Inizializza IndexedDB
+            await offlineStorage.init();
+            console.log('[App] OfflineStorage inizializzato');
+
+            // Inizializza sincronizzatore
+            offlineSynchronizer.init();
+
+            // Ascolta notifiche offline
+            window.addEventListener('offline-notification', (event) => {
+                this.showOfflineNotification(event.detail.message, event.detail.type);
+            });
+
+            // Mostra status iniziale se offline
+            if (!navigator.onLine) {
+                this.showOfflineNotification('⚠️ Sei offline. Utilizzerai i dati salvati.', 'warning');
+            }
+        } catch (error) {
+            console.error('[App] Errore inizializzazione offline:', error);
+        }
+    },
+
+    showOfflineNotification(message, type = 'info') {
+        // Trova o crea container per notifiche
+        let container = document.getElementById('offline-notifications');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'offline-notifications';
+            container.style.cssText = 'position: fixed; top: 80px; right: 20px; z-index: 1050; max-width: 400px;';
+            document.body.appendChild(container);
+        }
+
+        // Crea notifica bootstrap
+        const alertClass = {
+            'success': 'alert-success',
+            'error': 'alert-danger',
+            'warning': 'alert-warning',
+            'info': 'alert-info'
+        }[type] || 'alert-info';
+
+        const alert = document.createElement('div');
+        alert.className = `alert ${alertClass} alert-dismissible fade show`;
+        alert.role = 'alert';
+        alert.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+
+        container.appendChild(alert);
+
+        // Auto-rimuovi dopo 5 secondi
+        setTimeout(() => {
+            if (alert.parentNode) {
+                alert.remove();
+            }
+        }, 5000);
     },
 
     showSection(sectionId) {
