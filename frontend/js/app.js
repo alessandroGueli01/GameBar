@@ -279,8 +279,14 @@ const app = {
         if (tournamentsGrid) {
             tournamentsGrid.innerHTML = tournamentsList.length
                 ? tournamentsList.map((tournament) => {
+                    // Debug: Verifica il confronto userId
                     const isUserEnrolled = currentUser && tournament.participants && 
-                                          tournament.participants.some(p => p.userId === currentUser.id);
+                                          tournament.participants.some(p => {
+                                              const match = p.userId.toString() === currentUser.id.toString();
+                                              console.log(`[Tournament] Check enrollment: p.userId=${p.userId} vs currentUser.id=${currentUser.id} = ${match}`);
+                                              return match;
+                                          });
+                    
                     const participantCount = tournament.participantCount || (tournament.participants || []).length;
                     const maxParticipants = tournament.maxParticipants || 0;
                     const availableSpots = tournament.availableSpots || (maxParticipants - participantCount);
@@ -298,10 +304,10 @@ const app = {
                                     <div class="btn-group w-100" role="group">
                                         ${currentUser && currentUser.role === 'PLAYER' && tournament.status === 'REGISTRATION_OPEN'
                                             ? isUserEnrolled 
-                                                ? `<button class="btn btn-danger btn-sm" onclick="app.leaveTournament('${tournament.id}')">❌ Cancellati</button>`
+                                                ? `<button class="btn btn-danger btn-sm w-100" onclick="app.leaveTournament('${tournament.id}')">❌ Cancellati</button>`
                                                 : availableSpots > 0
-                                                    ? `<button class="btn btn-primary btn-sm" onclick="app.joinTournament('${tournament.id}')">✓ Partecipa</button>`
-                                                    : `<button class="btn btn-secondary btn-sm" disabled>Torneo Pieno</button>`
+                                                    ? `<button class="btn btn-primary btn-sm w-100" onclick="app.joinTournament('${tournament.id}')">✓ Partecipa</button>`
+                                                    : `<button class="btn btn-secondary btn-sm w-100" disabled>Torneo Pieno</button>`
                                             : currentUser && currentUser.role !== 'PLAYER' && tournament.status === 'REGISTRATION_OPEN'
                                                 ? '<small class="text-muted d-block mt-2">Solo i giocatori possono iscriversi.</small>'
                                                 : ''}
