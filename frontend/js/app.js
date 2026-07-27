@@ -481,6 +481,9 @@ const app = {
 
             alert('Iscrizione al torneo completata con successo.');
             await this.loadDashboardData();
+            
+            // Mostra la sezione tornei per vedere il pulsante di cancellazione
+            this.showSection('tournaments-section');
         } catch (error) {
             alert(`Iscrizione non riuscita: ${error.message}`);
         }
@@ -505,6 +508,8 @@ const app = {
 
             alert('Cancellazione dal torneo completata con successo.');
             await this.loadDashboardData();
+            
+            // Rimane nella sezione tornei per vedere l'aggiornamento
         } catch (error) {
             alert(`Cancellazione non riuscita: ${error.message}`);
         }
