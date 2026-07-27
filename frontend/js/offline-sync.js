@@ -100,7 +100,7 @@ class OfflineSynchronizer {
     }
 
     // Aggiungi token se disponibile
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('cgp_token');
     if (token) {
       options.headers['Authorization'] = `Bearer ${token}`;
     }
@@ -111,7 +111,12 @@ class OfflineSynchronizer {
       throw new Error(`API error: ${response.status} ${response.statusText}`);
     }
 
-    return response.json();
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      return response.json();
+    }
+
+    return response.text();
   }
 
   // Notifica stato offline/online

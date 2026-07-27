@@ -290,6 +290,37 @@ const app = {
                     const participantCount = tournament.participantCount || (tournament.participants || []).length;
                     const maxParticipants = tournament.maxParticipants || 0;
                     const availableSpots = tournament.availableSpots || (maxParticipants - participantCount);
+                    const canRegister = tournament.status === 'REGISTRATION_OPEN';
+
+                    const canLeave = !!currentUser && currentUser.role === 'PLAYER' && isUserEnrolled && canRegister;
+                    const leaveReason = !currentUser
+                        ? 'Accedi per cancellarti'
+                        : currentUser.role !== 'PLAYER'
+                            ? 'Solo PLAYER'
+                            : !isUserEnrolled
+                                ? 'Non sei iscritto'
+                                : !canRegister
+                                    ? 'Iscrizioni chiuse'
+                                    : 'Cancellazione disponibile';
+
+                    const leaveButtonHtml = canLeave
+                        ? `<button class="btn btn-danger btn-sm w-100" onclick="app.leaveTournament('${tournament.id}')">❌ Cancellati</button>`
+                        : `<button class="btn btn-danger btn-sm w-100" disabled title="${leaveReason}">❌ Cancellati</button>`;
+
+                    let tournamentActionHtml = '';
+                    if (currentUser && currentUser.role === 'PLAYER') {
+                        tournamentActionHtml = canRegister
+                            ? (isUserEnrolled
+                                ? '<button class="btn btn-success btn-sm w-100" disabled>✓ Sei iscritto</button>'
+                                : (availableSpots > 0
+                                    ? `<button class="btn btn-primary btn-sm w-100" onclick="app.joinTournament('${tournament.id}')">✓ Partecipa</button>`
+                                    : '<button class="btn btn-secondary btn-sm w-100" disabled>Torneo pieno</button>'))
+                            : '<button class="btn btn-secondary btn-sm w-100" disabled>Iscrizioni chiuse</button>';
+                    } else if (!currentUser) {
+                        tournamentActionHtml = '<small class="text-muted d-block mt-2">Accedi per iscriverti ai tornei.</small>';
+                    } else {
+                        tournamentActionHtml = '<small class="text-muted d-block mt-2">Solo i giocatori possono iscriversi.</small>';
+                    }
                     
                     return `
                         <div class="col">
@@ -301,16 +332,11 @@ const app = {
                                         <strong>Partecipanti:</strong> ${participantCount}/${maxParticipants}
                                         <br><small class="text-muted">Posti disponibili: ${availableSpots}</small>
                                     </div>
+                                    <div class="btn-group w-100 mb-2" role="group">
+                                        ${leaveButtonHtml}
+                                    </div>
                                     <div class="btn-group w-100" role="group">
-                                        ${currentUser && currentUser.role === 'PLAYER' && tournament.status === 'REGISTRATION_OPEN'
-                                            ? isUserEnrolled 
-                                                ? `<button class="btn btn-danger btn-sm w-100" onclick="app.leaveTournament('${tournament.id}')">❌ Cancellati</button>`
-                                                : availableSpots > 0
-                                                    ? `<button class="btn btn-primary btn-sm w-100" onclick="app.joinTournament('${tournament.id}')">✓ Partecipa</button>`
-                                                    : `<button class="btn btn-secondary btn-sm w-100" disabled>Torneo Pieno</button>`
-                                            : currentUser && currentUser.role !== 'PLAYER' && tournament.status === 'REGISTRATION_OPEN'
-                                                ? '<small class="text-muted d-block mt-2">Solo i giocatori possono iscriversi.</small>'
-                                                : ''}
+                                        ${tournamentActionHtml}
                                     </div>
                                     ${isUserEnrolled ? '<p class="text-success small mt-2">✓ Sei iscritto a questo torneo</p>' : ''}
                                 </div>
@@ -460,6 +486,46 @@ const app = {
         }
     },
 
+    updateTournamentParticipantsLocally(tournamentId, type, currentUser) {
+        const tournaments = this.dashboardState?.tournaments;
+        if (!Array.isArray(tournaments)) return false;
+
+        const tournament = tournaments.find((item) => String(item.id) === String(tournamentId));
+        if (!tournament) return false;
+
+        const participants = Array.isArray(tournament.participants) ? [...tournament.participants] : [];
+        const userId = String(currentUser.id);
+        const hasUser = participants.some((p) => String(p.userId) === userId);
+
+        if (type === 'join' && !hasUser) {
+            participants.push({
+                userId: currentUser.id,
+                username: currentUser.username,
+                score: 0,
+                wins: 0,
+                losses: 0
+            });
+        }
+
+        if (type === 'leave' && hasUser) {
+            tournament.participants = participants.filter((p) => String(p.userId) !== userId);
+        } else {
+            tournament.participants = participants;
+        }
+
+        tournament.participantCount = tournament.participants.length;
+        tournament.availableSpots = Math.max((tournament.maxParticipants || 0) - tournament.participantCount, 0);
+
+        this.renderDashboard(
+            this.dashboardState.games,
+            this.dashboardState.matches,
+            this.dashboardState.tournaments,
+            this.dashboardState.leaderboard
+        );
+        this.showSection('tournaments-section');
+        return true;
+    },
+
     async joinTournament(tournamentId) {
         const currentUser = this.getCurrentUser();
 
@@ -478,6 +544,8 @@ const app = {
                 userId: currentUser.id,
                 username: currentUser.username
             });
+
+            this.updateTournamentParticipantsLocally(tournamentId, 'join', currentUser);
 
             alert('Iscrizione al torneo completata con successo.');
             await this.loadDashboardData();
@@ -505,6 +573,8 @@ const app = {
             await api.request(`${CONFIG.TOURNAMENT_BASE}/${tournamentId}/leave`, 'POST', {
                 userId: currentUser.id
             });
+
+            this.updateTournamentParticipantsLocally(tournamentId, 'leave', currentUser);
 
             alert('Cancellazione dal torneo completata con successo.');
             await this.loadDashboardData();

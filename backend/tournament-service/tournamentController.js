@@ -83,7 +83,12 @@ exports.deleteTournament = async (req, res) => {
 exports.joinTournament = async (req, res) => {
   try {
     const { userId, username } = req.body; // Assumiamo che userId e username vengano dal frontend/User Service
+    const normalizedUserId = String(userId);
     const tournament = await Tournament.findByPk(req.params.id);
+
+    if (!userId || !username) {
+      return res.status(400).json({ error: "userId e username sono obbligatori." });
+    }
 
     if (!tournament) return res.status(404).json({ error: "Torneo non trovato" });
     if (tournament.status !== 'REGISTRATION_OPEN') {
@@ -92,7 +97,7 @@ exports.joinTournament = async (req, res) => {
     if (tournament.participants.length >= tournament.maxParticipants) {
       return res.status(400).json({ error: "Il torneo ha raggiunto il numero massimo di partecipanti." });
     }
-    if (tournament.participants.some(p => p.userId.toString() === userId)) {
+    if (tournament.participants.some(p => String(p.userId) === normalizedUserId)) {
       return res.status(400).json({ error: "L'utente è già iscritto a questo torneo." });
     }
 
@@ -109,7 +114,12 @@ exports.joinTournament = async (req, res) => {
 exports.leaveTournament = async (req, res) => {
   try {
     const { userId } = req.body;
+    const normalizedUserId = String(userId);
     const tournament = await Tournament.findByPk(req.params.id);
+
+    if (!userId) {
+      return res.status(400).json({ error: "userId è obbligatorio." });
+    }
 
     if (!tournament) return res.status(404).json({ error: "Torneo non trovato" });
     
@@ -119,12 +129,12 @@ exports.leaveTournament = async (req, res) => {
     }
 
     // Verifica se l'utente è iscritto
-    if (!tournament.participants.some(p => p.userId.toString() === userId)) {
+    if (!tournament.participants.some(p => String(p.userId) === normalizedUserId)) {
       return res.status(400).json({ error: "L'utente non è iscritto a questo torneo." });
     }
 
     // Rimuovi l'utente
-    const updatedParticipants = tournament.participants.filter(p => p.userId.toString() !== userId);
+    const updatedParticipants = tournament.participants.filter(p => String(p.userId) !== normalizedUserId);
     tournament.participants = updatedParticipants;
     await tournament.save();
 
