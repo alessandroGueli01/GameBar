@@ -8,7 +8,7 @@ services:
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_PASSWORD=postgres_password
+      - POSTGRES_PASSWORD=Fresco2001
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./infrastructure/postgres:/docker-entrypoint-initdb.d

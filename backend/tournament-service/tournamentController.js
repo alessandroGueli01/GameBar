@@ -98,7 +98,7 @@ exports.joinTournament = async (req, res) => {
       return res.status(400).json({ error: "Il torneo ha raggiunto il numero massimo di partecipanti." });
     }
     if (tournament.participants.some(p => String(p.userId) === normalizedUserId)) {
-      return res.status(400).json({ error: "L'utente è già iscritto a questo torneo." });
+      return res.status(400).json({ error: "Iscrizione già fatta" });
     }
 
     const participants = [...tournament.participants, { userId, username, score: 0, wins: 0, losses: 0 }];

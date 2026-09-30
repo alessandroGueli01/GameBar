@@ -553,7 +553,8 @@ const app = {
             // Mostra la sezione tornei per vedere il pulsante di cancellazione
             this.showSection('tournaments-section');
         } catch (error) {
-            alert(`Iscrizione non riuscita: ${error.message}`);
+            // Mostra direttamente il messaggio restituito dal server (es. "Iscrizione già fatta")
+            alert(error.message || 'Iscrizione non riuscita');
         }
     },
 
@@ -581,7 +582,8 @@ const app = {
             
             // Rimane nella sezione tornei per vedere l'aggiornamento
         } catch (error) {
-            alert(`Cancellazione non riuscita: ${error.message}`);
+            // Mostra direttamente il messaggio restituito dal server per maggiore chiarezza
+            alert(error.message || 'Cancellazione non riuscita');
         }
     },
 
