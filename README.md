@@ -150,3 +150,4 @@ Il simulatore MQTT in [sensor-simulator](sensor-simulator) può essere usato per
 - uso di container per rendere l'ambiente riproducibile;
 - valore didattico del progetto come esempio di sistema distribuito.
 
+# GameBar
