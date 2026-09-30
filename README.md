@@ -151,3 +151,4 @@ Il simulatore MQTT in [sensor-simulator](sensor-simulator) può essere usato per
 - valore didattico del progetto come esempio di sistema distribuito.
 
 # GameBar
+# 2buydress
